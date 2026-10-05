@@ -1,0 +1,10 @@
+.env
+.venv/
+node_modules/
+dist/
+data/*
+!data/.gitkeep
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.log

@@ -1,0 +1,34 @@
+name: Coleta auditável de fontes reais
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 9 * * *" # 06:30 America/Sao_Paulo (UTC-3)
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.22"
+      - run: uv sync --locked --no-dev
+      - name: Coletar e validar fontes
+        run: uv run python -m backend.ingest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coleta-oficial-${{ github.run_id }}
+          path: data/observatorio.sqlite3
+          retention-days: 30
+      - name: Exigir resposta publicável de todas as integrações ativas
+        run: |
+          uv run python - <<'PY'
+          import sqlite3, json
+          db = sqlite3.connect('data/observatorio.sqlite3')
+          status, detail = db.execute('SELECT status,detail FROM runs ORDER BY id DESC LIMIT 1').fetchone()
+          print('Resultado:', status, detail)
+          if status != 'success':
+              raise SystemExit('Coleta parcial: revisar as fontes. Cache real preservado como artefato.')
+          PY

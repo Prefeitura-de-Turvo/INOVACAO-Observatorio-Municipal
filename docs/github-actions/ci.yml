@@ -1,0 +1,21 @@
+name: Verificação
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.22"
+      - run: npm ci
+      - run: npm run build
+      - run: uv sync --locked
+      - run: uv run pytest -q
+      - run: uv run ruff check backend integration tests
