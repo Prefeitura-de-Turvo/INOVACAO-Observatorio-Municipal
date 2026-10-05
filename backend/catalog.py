@@ -60,6 +60,11 @@ SOURCES = {
         "url": "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/dados-abertos/cadastros",
         "description": "Cadastro aberto contém município, CNAE, porte e opção SIMEI. O retrato municipal agregado requer processamento do conjunto nacional; nenhuma listagem identificável é publicada.",
     },
+    "sebrae": {
+        "name": "Sebrae/PR • IDAN-M",
+        "url": "https://sebraepr.com.br/servicos/premio-cidade-empreendedora/",
+        "description": "Índice anual de Desenvolvimento do Ambiente de Negócios Municipal. Resultados públicos encontrados são divulgações e reconhecimentos; não foi localizada API ou planilha municipal aberta com a série completa de Turvo.",
+    },
 }
 
 
@@ -212,6 +217,15 @@ CATALOG = [
         "empresas",
         "Agregação municipal da base aberta CNPJ por MEI, ME, EPP, demais portes, CNAE e situação ativa.",
         note="A base nacional da Receita Federal exige processamento mensal; este indicador só será publicado após carga completa e validada. O retrato não identifica empresas.",
+    ),
+    indicator(
+        "idan_m",
+        "IDAN-M • Sebrae/PR",
+        "Escritório de Compras Públicas",
+        "sebrae",
+        "pontos (0–100)",
+        "Pontuação anual oficial do Índice de Desenvolvimento do Ambiente de Negócios Municipal, conforme divulgação ou extrato oficial do Sebrae/PR. O índice é acompanhado nos municípios participantes do Cidade Empreendedora; não estimar a nota a partir dos eixos.",
+        note="Série de Turvo ainda não localizada em API ou tabela pública estruturada. A publicação exige extrato ou divulgação oficial do Sebrae/PR e validação do ano e município. Consulte a página de fontes para os canais públicos.",
     ),
     indicator(
         "transfers",

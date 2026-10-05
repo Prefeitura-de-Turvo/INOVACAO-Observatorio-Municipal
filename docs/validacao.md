@@ -20,6 +20,7 @@ Validação com APIs reais em 05/10/2026. Estes resultados documentam uma coleta
 | Planos de transferências especiais | 2025 | Coleta real validada |
 | Propostas federais de parceria | 2025 | Coleta real validada; 12 propostas no endpoint público do TransfereGov |
 | Empresas ativas por porte e atividade econômica | Não disponível | Pendente de processamento da base aberta CNPJ da Receita Federal |
+| IDAN-M • Sebrae/PR | Não disponível | Integração de catálogo e importador implementados; série de Turvo pendente de divulgação/extrato oficial municipal |
 
 Comparação validada com 6 municípios (Turvo e 5 pares populacionais do PR) e referência 2026. PNCP retornou 236 identificadores únicos do CNPJ municipal em 2025. FNDE/PNAE retornou registros por esfera e etapa, sem somá-los. RREO Simplificado validou RCL na coluna dos últimos 12 meses.
 

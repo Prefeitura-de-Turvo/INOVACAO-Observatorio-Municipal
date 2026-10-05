@@ -781,7 +781,7 @@ function App() {
                     <section className="card office-intro">
                       <p className="eyebrow">DESENVOLVIMENTO LOCAL</p>
                       <h2>Compras públicas e oportunidades para pequenos negócios</h2>
-                      <p>O painel reúne contratos publicados pela Prefeitura no PNCP. Os dados de empresas por porte e CNAE entram após processamento validado da base aberta CNPJ da Receita Federal. Não há cadastro individual nem dados de atendimento do IDAM neste painel.</p>
+                      <p>O painel reúne contratos publicados pela Prefeitura no PNCP e acompanha o IDAN-M anual do Sebrae/PR. A série de Turvo só será exibida quando houver pontuações oficiais verificadas. O perfil agregado de empresas por porte e CNAE depende do processamento da base aberta CNPJ da Receita Federal.</p>
                     </section>
                   )}
                   <div className="section-title">

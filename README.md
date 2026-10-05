@@ -8,7 +8,7 @@ Aplicação executável, frontend responsivo, backend, ingestão real via MCP Br
 
 Os módulos incluem Visão Geral, Demografia, Economia, Finanças Públicas, Saúde, Educação, Emprego, Saneamento/Infraestrutura, Compras Públicas/PNCP, Escritório de Compras Públicas, Transferências/convênios, Comparação e Fontes. A existência de um módulo não significa que todas as fontes estejam disponíveis.
 
-As coletas reais validaram IBGE, CNES, PNCP, FNDE/PNAE, SICONFI e transferências especiais. O adaptador de contratos consulta o PNCP por órgão e agrega contratos sem expor identificação fiscal de fornecedores. O IDEB municipal consulta os downloads oficiais do INEP por rede e etapa. A API pública nova do TransfereGov é integrada para propostas federais do município; a interface deixa claro que proposta não significa convênio assinado nem pagamento. O escritório traz busca, filtro por estado da coleta e referência, com perfil de empresas por porte/atividade marcado como pendente até processar a base nacional aberta CNPJ da Receita Federal. Falhas preservam cache validado; dados indisponíveis não viram zero. Consulte [validação](docs/validacao.md).
+As coletas reais validaram IBGE, CNES, PNCP, FNDE/PNAE, SICONFI e transferências especiais. O adaptador de contratos consulta o PNCP por órgão e agrega contratos sem expor identificação fiscal de fornecedores. O IDEB municipal consulta os downloads oficiais do INEP por rede e etapa. A API pública nova do TransfereGov é integrada para propostas federais do município; a interface deixa claro que proposta não significa convênio assinado nem pagamento. O escritório traz busca, filtro por estado da coleta e referência, com perfil de empresas por porte/atividade marcado como pendente até processar a base nacional aberta CNPJ da Receita Federal. Inclui o IDAN-M anual do Sebrae/PR, sem pontuação até obter divulgação ou extrato oficial de Turvo. Falhas preservam cache validado; dados indisponíveis não viram zero. Consulte [validação](docs/validacao.md).
 
 ## Iniciar em desenvolvimento
 
@@ -102,6 +102,16 @@ uv run python -m backend.import_rais /caminho/arquivo-oficial.txt \
 ```
 
 O layout homologado exige `Município` e `Vínculo Ativo 31/12` (`0`/`1`), delimitador `;` e encoding latin-1 por padrão. O importador conta apenas vínculos ativos do município do estabelecimento (412796/4127965), valida o hash e preserva proveniência, publicando **somente o agregado**. Não envia nem armazena microdados pessoais no cache. Hash atesta integridade; o operador deve conferir autenticidade e o ano da fonte. Sem arquivo real validado, o módulo permanece pendente. Novos layouts exigem atualização explícita do parser.
+
+## IDAN-M anual do Sebrae/PR
+
+O resultado individual de Turvo não foi encontrado em uma API ou tabela pública estruturada. Obtenha uma divulgação ou extrato oficial do Sebrae/PR contendo as pontuações anuais municipais; o painel não infere nota nem usa média estadual. Converta apenas as linhas oficiais para CSV UTF-8 com delimitador ; e cabeçalho codigo_ibge;ano;pontuacao, usando o código IBGE 4127965. Registre o SHA-256 e a URL oficial do arquivo:
+
+    uv run python -m backend.import_idan_m /caminho/idan-m.csv \
+      --source-url URL_OFICIAL_SEBRAE \
+      --sha256 SHA256_CONFERIDO
+
+O importador exige URL HTTPS Sebrae/PR, verifica o hash, rejeita duplicidades e valida ano e pontuação entre 0 e 100. Apenas a série agregada de Turvo, proveniência e hash entram no banco local. A conferência de autenticidade do documento e da metodologia cabe ao operador. Veja [catálogo e critérios](docs/indicadores.md).
 
 ## Verificação
 

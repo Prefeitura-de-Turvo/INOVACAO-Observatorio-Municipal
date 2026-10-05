@@ -18,12 +18,19 @@ Valores são obtidos em execução; nenhum valor é fixado neste catálogo. Per�
 | Contratações publicadas no PNCP | Compras Públicas/PNCP | pncp | processos | Identificadores PNCP únicos por CNPJ municipal, ano de publicação e todas as modalidades/páginas.  |
 | Contratos publicados no PNCP | Escritório de Compras Públicas | PNCP | contratos | Todos os contratos do CNPJ municipal e período anual; painel expõe dados agregados de valor/categoria/tipo de pessoa, não CNPJ/CPF nem nome do fornecedor. |
 | Empresas ativas por porte e atividade econômica | Escritório de Compras Públicas | Receita Federal / CNPJ | empresas | Indicador pendente: depende de agregação municipal validada da base nacional CNPJ, CNAE, porte e SIMEI. Não será calculado com amostra ou cadastro individual. |
+| IDAN-M • Sebrae/PR | Escritório de Compras Públicas | Sebrae/PR | pontos (0–100) | Série anual da pontuação oficial do Índice de Desenvolvimento do Ambiente de Negócios Municipal. Sem valor até obter extrato/divulgação oficial por município e ano; não estimar a nota pelos eixos ou pela média divulgada para participantes. |
 | Planos de transferências especiais | Transferências/convênios | transferegov | planos | Planos de ação únicos para o CNPJ da Prefeitura. Sem inferir valor pago.  |
 | Propostas federais de parceria | Transferências/convênios | TransfereGov Gestão de Parcerias | propostas | API aberta filtrada pelo código IBGE. Propostas não equivalem a instrumentos celebrados, valores transferidos ou pagamentos. |
 
 ## Escritório de Compras Públicas
 
-O módulo consolida contratos do PNCP e prevê o perfil local de MEI/ME/EPP e atividades econômicas necessário ao diagnóstico de compras públicas do Sebrae. A base CNPJ é nacional e volumosa; até que a carga completa mensal seja processada, os números por porte/CNAE ficam indisponíveis. O diagnóstico Sebrae também pode envolver documentos, CAF, licenças sanitárias, capacitação e atendimentos; não há integração confirmada desses cadastros locais. O termo “IDAM” não foi identificado pelo solicitante e não é associado automaticamente a um órgão ou sistema.
+O módulo consolida contratos PNCP, o perfil agregado de empresas e o IDAN-M do Sebrae/PR. O Sebrae informa que o índice acompanha a evolução do ambiente de negócios nos municípios participantes do Cidade Empreendedora; a metodologia articula eixos como compras governamentais, desburocratização, crédito, inovação e governança. A pontuação anual individual de Turvo não foi localizada em API ou tabela pública estruturada. Por isso, o indicador permanece sem número até a obtenção de extrato ou divulgação oficial, que pode ser importado pela ferramenta documentada no README. A média divulgada para participantes não substitui o resultado municipal.
+
+## Importação oficial do IDAN-M
+
+O importador suplementar exige CSV UTF-8 com cabeçalho `codigo_ibge;ano;pontuacao`, URL HTTPS oficial do Sebrae/PR e SHA-256 do arquivo conferido. Aceita somente linhas do código IBGE 4127965, anos válidos e pontuações de 0 a 100; rejeita anos duplicados. Ele guarda a série, a URL e o hash de origem no cache/evidências locais. O dashboard não lista documentos ou respostas individuais do diagnóstico.
+
+Fontes consultadas: [Sebrae/PR — Prêmio Cidade Empreendedora](https://sebraepr.com.br/servicos/premio-cidade-empreendedora/) e [ASN/PR — municípios e evolução do IDAN-M](https://pr.agenciasebrae.com.br/economia-e-politica/municipios-do-parana-avancam-no-desenvolvimento-com-apoio-do-cidade-empreendedora/).
 
 ## Comparação
 
