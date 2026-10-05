@@ -17,6 +17,7 @@ Inspeção em 05/10/2026 antes da implementação:
 | `fnde_consultar_pnae_alunos` | `ano` texto, `estado`, `municipio`, `limite`; filtro municipal parcial exige conferência exata |
 | `compras_pncp_buscar_contratacoes` | datas YYYYMMDD, modalidade obrigatória, CNPJ e página; texto é filtro local |
 | `transferegov_emendas_por_municipio` | nome municipal, ano e página; busca pelo nome requer validação adicional por CNPJ/UF |
+| `inep_consultar_ideb` | `ano`, `etapa`, `nivel`; o MCP Brasil gera links oficiais XLSX, pois o INEP não oferece API REST para este conjunto |
 
 O atalho IBGE `pib_per_capita` da versão inspecionada muda a consulta para nível nacional. Não é utilizado. A variável 543 da tabela 5938 representa impostos, não PIB per capita; a validação de unidade bloqueou essa hipótese na implantação. A implementação final calcula uma razão própria a partir de PIB e população em ano comum, deixando o método explícito.
 
@@ -24,8 +25,10 @@ O resumo CNES `resumo_rede_municipal` consulta leitos sem filtro municipal e pro
 
 ## Extensões locais
 
-`integration/bridge.py` registra `observatorio_ibge`, `observatorio_entes`, `observatorio_fiscal`, `observatorio_cnes`, `observatorio_pnae`, `observatorio_pncp`, `observatorio_transferencias`, `observatorio_comparacao` e `observatorio_pib_por_habitante` no servidor MCP Brasil importado. São ferramentas deste observatório, não nomes anunciados pelo projeto upstream.
+`integration/bridge.py` registra as extensões `observatorio_ibge`, `observatorio_entes`, `observatorio_fiscal`, `observatorio_cnes`, `observatorio_pnae`, `observatorio_ideb`, `observatorio_pncp`, `observatorio_pncp_contratos`, `observatorio_transferencias`, `observatorio_parcerias`, `observatorio_comparacao` e `observatorio_pib_por_habitante` no servidor MCP Brasil importado. São ferramentas deste observatório, não nomes anunciados pelo projeto upstream.
 
 Mantêm clientes, constantes e modelos oficiais do pacote; consultas que requerem estrutura perdida nos formatadores usam `mcp_brasil._shared.http_client`. Não há LLM interpretando ou inventando números. Comparação usa lista real de municípios do PR e consultas IBGE em lotes; localizações múltiplas são separadas por vírgula dentro de `N6[...]`.
 
 O MCP Brasil oferece retry/backoff para falhas transitórias. As correções locais PNCP usam sua fábrica HTTP e acrescentam tratamento de 204, validação de schema e espera em 429. Atualizar a dependência implica repetir testes de contrato e conferir clientes privados utilizados pelo bridge; não se atualiza automaticamente para main.
+
+O adapter IDEB usa os links oficiais XLSX gerados pelo cliente INEP do MCP Brasil e exige `openpyxl`; a indisponibilidade do host de download mantém o último cache validado. Gestão de Parcerias consome a API aberta oficial publicada em `api-publica.transferegov.gestao.gov.br`; a consulta por `cd_ibge_recebedor` e `ano_proposta` retorna propostas, ainda sem afirmar que sejam parcerias celebradas. Contratos PNCP usam a mesma API de consulta consumida pelo MCP Brasil e guardam somente categoria, valor publicado, unidade, texto do objeto e tipo pessoa do fornecedor; CNPJ/CPF e nome não entram na resposta estruturada armazenada pelo observatório.

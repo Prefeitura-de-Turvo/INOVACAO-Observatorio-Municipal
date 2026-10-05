@@ -14,10 +14,11 @@ from zoneinfo import ZoneInfo
 os.environ["MCP_BRASIL_TOOL_SEARCH"] = "none"
 from mcp_brasil._shared.http_client import create_client, http_get
 from mcp_brasil.data.compras.pncp import client as pncp
-from mcp_brasil.data.compras.pncp.constants import CONTRATACOES_URL
+from mcp_brasil.data.compras.pncp.constants import CONTRATACOES_URL, CONTRATOS_URL
 from mcp_brasil.data.fnde.constants import PNAE_URL
 from mcp_brasil.data.fnde.schemas import PnaeAluno
 from mcp_brasil.data.ibge.constants import AGREGADOS_URL
+from mcp_brasil.data.inep.client import gerar_urls_ideb
 from mcp_brasil.data.saude import client as saude
 from mcp_brasil.data.saude.constants import ESTABELECIMENTOS_URL
 from mcp_brasil.data.siconfi import client as fiscal
@@ -141,6 +142,72 @@ async def pnae(ano: int = 2022) -> dict:
     raise ValueError("Paginação PNAE incompleta")
 
 
+@mcp.tool(name="observatorio_ideb")
+async def ideb(ano: int = 2023) -> dict:
+    """Resultados IDEB municipais do INEP, por etapa e rede, a partir dos XLSX oficiais."""
+    import io
+    import re
+    import unicodedata
+
+    from openpyxl import load_workbook
+
+    if ano < 2005 or ano > 2023 or ano % 2 == 0:
+        raise ValueError("Ano IDEB inválido; use ano bienal publicado pelo INEP")
+    urls = await gerar_urls_ideb(ano=ano, nivel="municipios")
+    rows = []
+    for resource in urls:
+        async with create_client(timeout=120) as client:
+            response = await client.get(resource.url)
+            response.raise_for_status()
+        if len(response.content) > 35_000_000:
+            raise ValueError("Arquivo IDEB excede limite seguro de download")
+        workbook = load_workbook(io.BytesIO(response.content), read_only=True, data_only=True)
+        found = []
+        for sheet in workbook.worksheets:
+            header_row = None
+            for line, cells in enumerate(sheet.iter_rows(min_row=1, max_row=15, values_only=True), 1):
+                normalized = [re.sub(r"[^a-z0-9]+", "_", unicodedata.normalize("NFKD", str(v or "").lower()).encode("ascii", "ignore").decode()).strip("_") for v in cells]
+                if any("municip" in v for v in normalized) and any("ideb" in v for v in normalized):
+                    header_row = (line, normalized, list(cells))
+                    break
+            if not header_row:
+                continue
+            line, normalized, labels = header_row
+            code_idx = next((i for i, h in enumerate(normalized) if "codigo" in h and "municip" in h), None)
+            name_idx = next((i for i, h in enumerate(normalized) if "municip" in h and "codigo" not in h), None)
+            ideb_idx = next((i for i, h in enumerate(normalized) if "ideb" in h and str(ano) in h), None)
+            network_idx = next((i for i, h in enumerate(normalized) if "rede" in h), None)
+            if code_idx is None or ideb_idx is None:
+                continue
+            for values in sheet.iter_rows(min_row=line + 1, values_only=True):
+                raw_code = values[code_idx]
+                code_text = str(int(raw_code)) if isinstance(raw_code, float) and raw_code.is_integer() else str(raw_code or "")
+                code = re.sub(r"\D", "", code_text)
+                if code.lstrip("0") != "4127965":
+                    continue
+                value = values[ideb_idx]
+                if value in (None, "", "-"):
+                    continue
+                found.append({
+                    "etapa": resource.etapa,
+                    "rede": str(values[network_idx]) if network_idx is not None else "Não informada",
+                    "municipio": str(values[name_idx]) if name_idx is not None else "Turvo",
+                    "ideb": float(value),
+                    "meta": next((values[i] for i, h in enumerate(normalized) if "meta" in h and str(ano) in h), None),
+                })
+        workbook.close()
+        rows.extend(found)
+    if not rows:
+        raise ValueError("Turvo/PR não localizado nos arquivos municipais do IDEB")
+    return {
+        "rows": rows,
+        "url": "https://download.inep.gov.br/ideb/resultados/",
+        "complete": True,
+        "period": str(ano),
+        "params": {"ano": ano, "municipio_ibge": "4127965", "nivel": "municipios"},
+    }
+
+
 async def pncp_page(params: dict) -> dict:
     """Corrige 204 do PNCP, que o http_get original tenta decodificar como JSON."""
     async with create_client(timeout=30) as client:
@@ -219,6 +286,65 @@ async def compras(cnpj: str, ano: int) -> dict:
     }
 
 
+@mcp.tool(name="observatorio_pncp_contratos")
+async def contratos_pncp(cnpj: str, ano: int) -> dict:
+    """Agregados de contratos PNCP da Prefeitura, preservando dados de fornecedor fora do payload público."""
+    if len(cnpj) != 14 or not cnpj.isdigit():
+        raise ValueError("CNPJ municipal inválido")
+    start, end = f"{ano}0101", min(date(ano, 12, 31), datetime.now(ZoneInfo("America/Sao_Paulo")).date()).strftime("%Y%m%d")
+    raw_rows = []
+    total_expected = None
+    pages = []
+    async with create_client(timeout=60) as client:
+        for page in range(1, 201):
+            params = {"dataInicial": start, "dataFinal": end, "cnpjOrgao": cnpj, "pagina": page, "tamanhoPagina": 500}
+            response = await client.get(CONTRATOS_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+            if not isinstance(data.get("data"), list) or not isinstance(data.get("totalPaginas"), int):
+                raise ValueError("Schema PNCP contratos não reconhecido")
+            if total_expected is None:
+                total_expected = data.get("totalRegistros")
+            elif total_expected != data.get("totalRegistros"):
+                raise ValueError("PNCP alterou o total durante paginação")
+            pages.append(data)
+            for row in data["data"]:
+                org = row.get("orgaoEntidade") or {}
+                unit = row.get("unidadeOrgao") or {}
+                if org.get("cnpj") != cnpj or str(unit.get("codigoIbge")) != "4127965":
+                    raise ValueError("PNCP retornou órgão ou município divergente")
+                if row.get("tipoPessoa") == "PF":
+                    supplier_type = "Pessoa física"
+                elif row.get("tipoPessoa") == "PJ":
+                    supplier_type = "Pessoa jurídica"
+                else:
+                    supplier_type = "Não informado"
+                # Nunca guardar ou publicar identificação nominal/fiscal de fornecedores.
+                raw_rows.append({
+                    "numero_controle": row.get("numeroControlePNCP"),
+                    "categoria": (row.get("categoriaProcesso") or {}).get("nome", "Não informada"),
+                    "tipo_fornecedor": supplier_type,
+                    "valor": row.get("valorGlobal") or row.get("valorInicial"),
+                    "data_publicacao": row.get("dataPublicacaoPncp"),
+                    "objeto": row.get("objetoContrato"),
+                    "unidade": unit.get("nomeUnidade"),
+                })
+            if page >= data["totalPaginas"]:
+                break
+        else:
+            raise ValueError("Paginação PNCP excedeu o limite")
+    if len(raw_rows) != (total_expected or 0):
+        raise ValueError("Paginação PNCP incompleta")
+    unique = {r["numero_controle"]: r for r in raw_rows if r["numero_controle"]}
+    return {
+        "rows": list(unique.values()),
+        "url": CONTRATOS_URL,
+        "complete": True,
+        "period": f"{ano}",
+        "params": {"cnpj_orgao": cnpj, "ano": ano},
+    }
+
+
 @mcp.tool(name="observatorio_transferencias")
 async def transferencias(cnpj: str, ano: int) -> dict:
     """Transferências especiais por CNPJ validado. Não representam convênios nem valor pago."""
@@ -239,6 +365,49 @@ async def transferencias(cnpj: str, ano: int) -> dict:
                 "params": {"ano": ano, "cnpj_beneficiario": cnpj},
             }
     raise ValueError("Paginação TransfereGov excedeu limite")
+
+
+@mcp.tool(name="observatorio_parcerias")
+async def parcerias(ano: int = 2025) -> dict:
+    """Propostas e parcerias recebidas por Turvo na nova API pública do TransfereGov."""
+    base = "https://api-publica.transferegov.gestao.gov.br/parcerias/proposta"
+    rows, pages = [], []
+    async with create_client(timeout=45) as client:
+        for page in range(1, 101):
+            response = await client.get(
+                base,
+                params={"cd_ibge_recebedor": 4127965, "ano_proposta": ano, "pagina": page, "tamanho_da_pagina": 100},
+            )
+            response.raise_for_status()
+            data = response.json()
+            if not isinstance(data.get("data"), list) or not isinstance(data.get("total_pages"), int):
+                raise ValueError("Schema Gestão de Parcerias não reconhecido")
+            pages.append(data)
+            for row in data["data"]:
+                if str(row.get("cd_ibge_recebedor")) != "4127965":
+                    raise ValueError("TransfereGov retornou município diferente")
+                rows.append({
+                    "id_proposta": row.get("id_proposta"),
+                    "ano": row.get("ano_proposta"),
+                    "situacao": row.get("situacao_proposta"),
+                    "objeto": row.get("ds_objeto"),
+                    "valor_total_proposto": row.get("nr_vlr_total"),
+                    "data_proposta": row.get("dt_proposta"),
+                })
+            if page >= data["total_pages"]:
+                if len(rows) != data["total_items"]:
+                    raise ValueError("Paginação TransfereGov incompleta")
+                break
+        else:
+            raise ValueError("Paginação TransfereGov excedeu limite")
+    return {
+        "rows": rows,
+        "url": base,
+        "complete": True,
+        "period": str(ano),
+        "params": {"cd_ibge_recebedor": 4127965, "ano_proposta": ano},
+        "note": "São propostas cadastradas; somente instrumento/parceria celebrado deve ser interpretado como convênio firmado. Valor proposto não é valor transferido ou pago.",
+    }
 
 
 @mcp.tool(name="observatorio_comparacao")

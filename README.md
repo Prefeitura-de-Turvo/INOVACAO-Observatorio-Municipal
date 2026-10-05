@@ -6,9 +6,9 @@ Dashboard público em **pt-BR** para Turvo/PR, código IBGE **4127965**, com ind
 
 Aplicação executável, frontend responsivo, backend, ingestão real via MCP Brasil, cache persistente e atualização programada. **Não existem mocks ou números pré-preenchidos em produção.** O banco começa vazio e só recebe respostas validadas. Fixtures artificiais ficam exclusivamente em testes.
 
-Os 12 módulos estão presentes: Visão Geral, Demografia, Economia, Finanças Públicas, Saúde, Educação, Emprego, Saneamento/Infraestrutura, Compras Públicas/PNCP, Transferências/convênios, Comparação e Fontes. A existência de um módulo não significa que todas as fontes estejam disponíveis.
+Os módulos incluem Visão Geral, Demografia, Economia, Finanças Públicas, Saúde, Educação, Emprego, Saneamento/Infraestrutura, Compras Públicas/PNCP, Escritório de Compras Públicas, Transferências/convênios, Comparação e Fontes. A existência de um módulo não significa que todas as fontes estejam disponíveis.
 
-As coletas reais validaram IBGE, CNES, PNCP, FNDE/PNAE, SICONFI e transferências especiais. Os adaptadores tratam o RREO Simplificado de Turvo, filtros OData FNDE com espaços percent-encoded e HTTP 204/429 no PNCP. Falhas futuras exibem indisponibilidade ou cache preservado, sem zeros artificiais. A tabela de área 1301 retorna referência antiga (2010), indicada no dashboard. RAIS possui importador suplementar de arquivos oficiais; não há API RAIS no MCP inspecionado. IDEB municipal e convênios tradicionais permanecem explicitamente pendentes de integração complementar. Consulte [validação](docs/validacao.md).
+As coletas reais validaram IBGE, CNES, PNCP, FNDE/PNAE, SICONFI e transferências especiais. O adaptador de contratos consulta o PNCP por órgão e agrega contratos sem expor identificação fiscal de fornecedores. O IDEB municipal consulta os downloads oficiais do INEP por rede e etapa. A API pública nova do TransfereGov é integrada para propostas federais do município; a interface deixa claro que proposta não significa convênio assinado nem pagamento. O escritório traz busca, filtro por estado da coleta e referência, com perfil de empresas por porte/atividade marcado como pendente até processar a base nacional aberta CNPJ da Receita Federal. Falhas preservam cache validado; dados indisponíveis não viram zero. Consulte [validação](docs/validacao.md).
 
 ## Iniciar em desenvolvimento
 
@@ -118,8 +118,8 @@ Testes cobrem território errado, classificação ambígua, ausência de dados, 
 
 ## Evolução prevista
 
-1. Homologar download e processamento municipal de IDEB por rede/etapa, sem substituir pelo indicador estadual.
-2. Integrar convênios tradicionais por dados oficiais do TransfereGov, separados das transferências especiais.
+1. Processar mensalmente a base nacional aberta CNPJ da Receita Federal em job isolado, agregando Turvo por porte, CNAE e situação sem armazenar/servir identificadores.
+2. Expandir Gestão de Parcerias do TransfereGov de propostas para parcerias celebradas e execução financeira, separados das transferências especiais.
 3. Homologar cobertura RAIS/Caged automatizada e séries adicionais de saúde, finanças e saneamento.
 4. Ampliar comparações com PIB, estrutura etária e outros critérios no mesmo período.
 

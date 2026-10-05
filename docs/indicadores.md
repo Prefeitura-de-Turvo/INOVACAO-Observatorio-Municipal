@@ -13,11 +13,17 @@ Valores são obtidos em execução; nenhum valor é fixado neste catálogo. Per�
 | Receita corrente líquida | Finanças Públicas | siconfi | R$ | RREO Anexo 03, RCL (III), coluna TOTAL (ÚLTIMOS 12 MESES). Sem somar receitas componentes.  |
 | Estabelecimentos de saúde ativos | Saúde | cnes | unidades | Contagem por CNES único, território validado e todas as páginas. Competência não informada pela API. O horário da coleta não substitui o período da fonte. |
 | Alunos atendidos pelo PNAE | Educação | fnde | alunos | Registros FNDE por esfera/etapa, território exato. Não somar linhas sem validação de sobreposição.  |
-| IDEB municipal | Educação | inep | índice | Processar microdados municipais por rede e etapa antes da publicação. Conector municipal de microdados ainda não homologado; o MCP disponibiliza catálogo e downloads. |
+| IDEB municipal | Educação | INEP | índice | Planilhas municipais oficiais processadas por etapa/rede; cada linha mantém seu estrato e ano. |
 | Vínculos formais • RAIS | Emprego | rais | vínculos | Estoque em 31/12, município do estabelecimento. Apenas agregados oficiais, sem microdados pessoais. Sem ferramenta RAIS na versão inspecionada. Aceita importação suplementar documentada de agregados oficiais. |
 | Contratações publicadas no PNCP | Compras Públicas/PNCP | pncp | processos | Identificadores PNCP únicos por CNPJ municipal, ano de publicação e todas as modalidades/páginas.  |
+| Contratos publicados no PNCP | Escritório de Compras Públicas | PNCP | contratos | Todos os contratos do CNPJ municipal e período anual; painel expõe dados agregados de valor/categoria/tipo de pessoa, não CNPJ/CPF nem nome do fornecedor. |
+| Empresas ativas por porte e atividade econômica | Escritório de Compras Públicas | Receita Federal / CNPJ | empresas | Indicador pendente: depende de agregação municipal validada da base nacional CNPJ, CNAE, porte e SIMEI. Não será calculado com amostra ou cadastro individual. |
 | Planos de transferências especiais | Transferências/convênios | transferegov | planos | Planos de ação únicos para o CNPJ da Prefeitura. Sem inferir valor pago.  |
-| Convênios federais | Transferências/convênios | transferegov | convênios | Não confundir transferências especiais com convênios. O conector MCP atual cobre transferências especiais; convênios dependem de integração complementar homologada. |
+| Propostas federais de parceria | Transferências/convênios | TransfereGov Gestão de Parcerias | propostas | API aberta filtrada pelo código IBGE. Propostas não equivalem a instrumentos celebrados, valores transferidos ou pagamentos. |
+
+## Escritório de Compras Públicas
+
+O módulo consolida contratos do PNCP e prevê o perfil local de MEI/ME/EPP e atividades econômicas necessário ao diagnóstico de compras públicas do Sebrae. A base CNPJ é nacional e volumosa; até que a carga completa mensal seja processada, os números por porte/CNAE ficam indisponíveis. O diagnóstico Sebrae também pode envolver documentos, CAF, licenças sanitárias, capacitação e atendimentos; não há integração confirmada desses cadastros locais. O termo “IDAM” não foi identificado pelo solicitante e não é associado automaticamente a um órgão ou sistema.
 
 ## Comparação
 

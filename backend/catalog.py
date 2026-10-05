@@ -11,6 +11,7 @@ MODULES = [
     "Compras Públicas/PNCP",
     "Transferências/convênios",
     "Comparação",
+    "Escritório de Compras Públicas",
     "Fontes",
 ]
 SOURCES = {
@@ -37,7 +38,7 @@ SOURCES = {
     "inep": {
         "name": "INEP",
         "url": "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos",
-        "description": "Catálogo de microdados disponível no MCP; IDEB municipal exige processamento adicional, não confundir com IDEB estadual.",
+        "description": "Resultados oficiais do IDEB por município, etapa e rede, processados a partir das planilhas do INEP.",
     },
     "rais": {
         "name": "Ministério do Trabalho / RAIS",
@@ -51,8 +52,13 @@ SOURCES = {
     },
     "transferegov": {
         "name": "TransfereGov",
-        "url": "https://www.gov.br/transferegov/pt-br",
-        "description": "Transferências especiais (emendas Pix), por CNPJ. Planos de ação não representam pagamentos nem todos os convênios.",
+        "url": "https://api-publica.transferegov.gestao.gov.br/parcerias/docs",
+        "description": "API aberta de Gestão de Parcerias, além dos dados de transferências especiais. Convênios e emendas especiais são indicadores separados.",
+    },
+    "rfb": {
+        "name": "Receita Federal / CNPJ",
+        "url": "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/dados-abertos/cadastros",
+        "description": "Cadastro aberto contém município, CNAE, porte e opção SIMEI. O retrato municipal agregado requer processamento do conjunto nacional; nenhuma listagem identificável é publicada.",
     },
 }
 
@@ -166,8 +172,9 @@ CATALOG = [
         "Educação",
         "inep",
         "índice",
-        "Processar microdados municipais por rede e etapa antes da publicação.",
-        note="Conector municipal de microdados ainda não homologado; o MCP disponibiliza catálogo e downloads.",
+        "Resultados municipais do INEP, separados por etapa e rede. Não misturar escolas, municípios e estado.",
+        "observatorio_ideb",
+        {"ano": 2023},
     ),
     indicator(
         "formal_jobs",
@@ -188,6 +195,25 @@ CATALOG = [
         "observatorio_pncp",
     ),
     indicator(
+        "procurement_contracts",
+        "Contratos publicados no PNCP",
+        "Escritório de Compras Públicas",
+        "pncp",
+        "contratos",
+        "Contratos e empenhos publicados por órgãos municipais no PNCP, com filtros por período, categoria e tipo de fornecedor. Valores registrados não equivalem a pagamentos.",
+        "observatorio_pncp_contratos",
+        note="Dados fiscais ou pessoais de fornecedores não são exibidos. O porte MEI/ME/EPP depende de campo confiável do cadastro da fonte.",
+    ),
+    indicator(
+        "business_profile",
+        "Empresas ativas por porte e atividade econômica",
+        "Escritório de Compras Públicas",
+        "rfb",
+        "empresas",
+        "Agregação municipal da base aberta CNPJ por MEI, ME, EPP, demais portes, CNAE e situação ativa.",
+        note="A base nacional da Receita Federal exige processamento mensal; este indicador só será publicado após carga completa e validada. O retrato não identifica empresas.",
+    ),
+    indicator(
         "transfers",
         "Planos de transferências especiais",
         "Transferências/convênios",
@@ -198,11 +224,13 @@ CATALOG = [
     ),
     indicator(
         "agreements",
-        "Convênios federais",
+        "Propostas federais de parceria",
         "Transferências/convênios",
         "transferegov",
-        "convênios",
-        "Não confundir transferências especiais com convênios.",
-        note="O conector MCP atual cobre transferências especiais; convênios dependem de integração complementar homologada.",
+        "propostas",
+        "Propostas cadastradas para o município na API Gestão de Parcerias. Não significa convênio assinado, valor transferido ou pagamento.",
+        "observatorio_parcerias",
+        {"ano": 2025},
+        note="O painel identifica propostas; uma parceria celebrada é uma etapa posterior. Valores propostos não são valores transferidos ou pagos.",
     ),
 ]

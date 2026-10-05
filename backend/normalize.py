@@ -67,6 +67,10 @@ def normalize(item, response):
             raise ValueError("Ente fiscal divergente")
         value, period = number(matches[0]["valor"]), response["period"]
         points = [{"period": period, "value": value}]
+    elif id == "ideb":
+        if not rows:
+            raise ValueError("INEP não retornou estratos municipais do IDEB")
+        value, period = None, response["period"]
     elif id == "pnae":
         if not rows:
             raise ValueError("FNDE não retornou registros municipais")
@@ -75,7 +79,7 @@ def normalize(item, response):
         # Somente endpoints de cadastros completos podem publicar zero registros.
         value, period = len(rows), response["period"]
         points = [{"period": period, "value": value}]
-    return {
+    result = {
         "value": value,
         "period": period,
         "points": points,
@@ -85,3 +89,16 @@ def normalize(item, response):
         "origin": "MCP Brasil + extensão estruturada local",
         "note": item.get("note", ""),
     }
+    if id == "procurement_contracts":
+        def count_by(key):
+            counts = {}
+            for row in rows:
+                label = str(row.get(key) or "Não informado")
+                counts[label] = counts.get(label, 0) + 1
+            return [{"name": name, "count": count} for name, count in sorted(counts.items(), key=lambda entry: (-entry[1], entry[0]))]
+
+        result["groups"] = {
+            "category": count_by("categoria"),
+            "supplier_type": count_by("tipo_fornecedor"),
+        }
+    return result

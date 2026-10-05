@@ -515,6 +515,25 @@ td {
   color: #66855a;
   background: none;
 }
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  margin: 0 0 22px;
+  border: 1px solid #e0e7dc;
+  border-radius: 9px;
+  background: #fbfcf9;
+}
+.filter-bar .search { flex: 1 1 240px; background: #fff; }
+.filter-bar .search input { width: 100%; font-size: 12px; }
+.filter-select { display: grid; gap: 3px; color: #82917e; font-size: 9px; text-transform: uppercase; letter-spacing: .35px; }
+.filter-select select { min-width: 145px; padding: 7px 26px 7px 9px; border: 1px solid #dfe7d7; border-radius: 6px; color: #46604d; background: #fff; font: inherit; font-size: 11px; text-transform: none; letter-spacing: 0; }
+.filter-count { margin-left: auto; color: #788977; font-size: 10px; white-space: nowrap; }
+.office-intro { padding: 21px; margin-bottom: 22px; }
+.office-intro h2 { margin: 3px 0 9px; }
+.office-intro p:last-child { max-width: 800px; color: #68786d; font-size: 12px; line-height: 1.7; }
 .pagination {
   display: flex;
   gap: 9px;
@@ -822,6 +841,11 @@ td {
   .search input {
     width: 110px;
   }
+  .filter-bar { align-items: stretch; gap: 8px; }
+  .filter-bar .search { flex-basis: 100%; }
+  .filter-select { flex: 1; }
+  .filter-select select { width: 100%; min-width: 0; }
+  .filter-count { margin-left: 0; align-self: center; }
 }
 @media (prefers-reduced-motion: reduce) {
   * {

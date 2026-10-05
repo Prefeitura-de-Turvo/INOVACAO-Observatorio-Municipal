@@ -43,6 +43,7 @@ type Indicator = {
   period: string | null;
   points: Point[];
   rows: Record<string, unknown>[];
+  groups?: { category?: { name: string; count: number }[]; supplier_type?: { name: string; count: number }[] };
   endpoint?: string;
   error?: string;
 };
@@ -246,6 +247,28 @@ function Chart({ item }: { item: Indicator }) {
     </section>
   );
 }
+function ProcurementAnalytics({ item }: { item: Indicator }) {
+  if (!item.groups) return null;
+  const charts = [
+    { title: "Contratos por categoria", data: item.groups.category || [] },
+    { title: "Fornecedor por tipo cadastral", data: item.groups.supplier_type || [] },
+  ];
+  return <div className="charts-grid office-charts">{charts.map((chart) => (
+    <section className="card chart" key={chart.title}>
+      <div className="section-title"><h2>{chart.title}</h2><span className="unit-chip">contratos</span></div>
+      {chart.data.length ? <div className="chart-body"><ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chart.data} layout="vertical" margin={{ left: 12, right: 16, top: 8, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 5" horizontal={false} />
+          <XAxis type="number" allowDecimals={false} fontSize={11} />
+          <YAxis type="category" dataKey="name" width={130} fontSize={10} />
+          <Tooltip formatter={(v) => [Number(v), "Contratos"]} />
+          <Bar dataKey="count" name="Contratos" fill="#168570" radius={[0, 5, 5, 0]} />
+        </BarChart>
+      </ResponsiveContainer></div> : <div className="empty">Sem registros para agrupar.</div>}
+      <Metadata item={item} />
+    </section>
+  ))}</div>;
+}
 function DataTable({ item }: { item: Indicator }) {
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
@@ -402,7 +425,10 @@ function App() {
     [mobile, setMobile] = useState(false),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
-    [reload, setReload] = useState(0);
+    [reload, setReload] = useState(0),
+    [searchText, setSearchText] = useState(""),
+    [statusFilter, setStatusFilter] = useState("all"),
+    [periodFilter, setPeriodFilter] = useState("all");
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -423,10 +449,19 @@ function App() {
   }, [reload]);
   const indicators = data?.indicators || [];
   const featured = ["population", "gdp_per_capita", "rcl", "health_units"];
-  const visible =
+  const moduleIndicators =
     module === "Visão Geral"
       ? indicators.filter((i) => featured.includes(i.id))
       : indicators.filter((i) => i.module === module);
+  const periods = [...new Set(moduleIndicators.map((i) => i.period).filter((p): p is string => !!p))].sort().reverse();
+  const visible = moduleIndicators.filter((i) => {
+    const query = searchText.trim().toLocaleLowerCase("pt-BR");
+    const matchesText = !query || [i.title, i.module, i.method, i.note, i.sourceInfo.name, i.period]
+      .some((s) => String(s || "").toLocaleLowerCase("pt-BR").includes(query))
+      || i.rows.some((row) => Object.values(row).some((v) => String(v ?? "").toLocaleLowerCase("pt-BR").includes(query)));
+    return matchesText && (statusFilter === "all" || i.status === statusFilter)
+      && (periodFilter === "all" || i.period === periodFilter);
+  });
   const available = indicators.filter((i) => i.updatedAt).length;
   return (
     <div className="app">
@@ -712,11 +747,48 @@ function App() {
                 </section>
               ) : (
                 <>
+                  <section className="filter-bar" aria-label="Filtros de busca">
+                    <label className="search">
+                      <Search size={15} />
+                      <input
+                        type="search"
+                        placeholder="Buscar indicador, tema ou conteúdo…"
+                        value={searchText}
+                        onChange={(event) => setSearchText(event.target.value)}
+                        aria-label="Buscar indicadores"
+                      />
+                    </label>
+                    <label className="filter-select">
+                      <span>Situação</span>
+                      <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                        <option value="all">Todas</option>
+                        <option value="available">Disponíveis</option>
+                        <option value="stale">Atualização pendente</option>
+                        <option value="unavailable">Indisponíveis</option>
+                        <option value="pending">Integração pendente</option>
+                      </select>
+                    </label>
+                    <label className="filter-select">
+                      <span>Período</span>
+                      <select value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value)}>
+                        <option value="all">Todos</option>
+                        {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </label>
+                    <span className="filter-count">{visible.length} de {moduleIndicators.length}</span>
+                  </section>
+                  {module === "Escritório de Compras Públicas" && (
+                    <section className="card office-intro">
+                      <p className="eyebrow">DESENVOLVIMENTO LOCAL</p>
+                      <h2>Compras públicas e oportunidades para pequenos negócios</h2>
+                      <p>O painel reúne contratos publicados pela Prefeitura no PNCP. Os dados de empresas por porte e CNAE entram após processamento validado da base aberta CNPJ da Receita Federal. Não há cadastro individual nem dados de atendimento do IDAM neste painel.</p>
+                    </section>
+                  )}
                   <div className="section-title">
                     <h2>
                       {module === "Visão Geral"
                         ? "Um retrato de Turvo"
-                        : "Indicadores do módulo"}
+                        : module === "Escritório de Compras Públicas" ? "Indicadores do escritório" : "Indicadores do módulo"}
                     </h2>
                     <span className="subtle">
                       Clique para explorar os dados
@@ -731,11 +803,12 @@ function App() {
                       />
                     ))}
                   </div>
+                  {!visible.length && <div className="empty">Nenhum indicador corresponde aos filtros selecionados.</div>}
                   {module === "Visão Geral" ? (
                     <>
                       <div className="charts-grid">
                         {["population", "gdp"]
-                          .map((id) => indicators.find((i) => i.id === id))
+                          .map((id) => visible.find((i) => i.id === id))
                           .filter((i): i is Indicator => !!i)
                           .map((item) => (
                             <Chart item={item} key={item.id} />
@@ -760,6 +833,7 @@ function App() {
                     visible.map((item) => (
                       <React.Fragment key={item.id}>
                         <Chart item={item} />
+                        <ProcurementAnalytics item={item} />
                         <DataTable item={item} />
                       </React.Fragment>
                     ))

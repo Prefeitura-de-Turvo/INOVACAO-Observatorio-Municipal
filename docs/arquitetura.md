@@ -8,7 +8,7 @@ flowchart LR
   scheduler[Agendador / CLI] --> lock[Lock transacional]
   lock --> client[FastMCP Client]
   client --> bridge[MCP Brasil + extensões locais]
-  bridge --> oficiais[IBGE / SICONFI / CNES / FNDE / PNCP / TransfereGov]
+  bridge --> oficiais[IBGE / SICONFI / CNES / FNDE / INEP / PNCP / TransfereGov]
   client --> validacao[Validação de território / período / unidade / completude]
   validacao --> cache
   arquivo[RAIS oficial verificada] --> importador[Importador suplementar de agregados]
@@ -31,9 +31,11 @@ IBGE mantém JSON de origem, variável, classificação, município, unidade, pe
 
 CNES faz paginação de 20 estabelecimentos por página e confere todos os códigos municipais antes de contar identificadores únicos. Sem extrapolar a primeira página. Competência desconhecida permanece desconhecida. Profissionais descontinuados e leitos potencialmente nacionais não são publicados.
 
-PNCP trata HTTP 204 como ausência legítima de registros, valida o schema da resposta 200, pagina com `totalPaginas`/`totalRegistros`, confere CNPJ e `unidadeOrgao.codigoIbge`, deduplica `numeroControlePNCP` e consulta todas as modalidades 1–14. Limites ou mudança do total durante coleta impedem a publicação. Requisições são espaçadas e HTTP 429 respeita espera/backoff. APIs indisponíveis produzem estado de erro, não coleção vazia falsa.
+PNCP trata HTTP 204 como ausência legítima de registros, valida o schema da resposta 200, pagina com `totalPaginas`/`totalRegistros`, confere CNPJ e `unidadeOrgao.codigoIbge`, deduplica `numeroControlePNCP` e consulta todas as modalidades 1–14. Contratos são consultados em rota separada para permitir o retrato do Escritório de Compras Públicas. A resposta guardada remove CNPJ/CPF e nomes de fornecedores; gráficos agrupam por categoria e tipo de pessoa, sem afirmar porte empresarial.
 
-TransfereGov pagina e filtra CNPJ e UF; não atribui emendas de Turvo/SC a Turvo/PR. A contagem é de planos de transferências especiais. FNDE expõe registros por etapa/esfera sem soma potencialmente duplicada. SICONFI exige linha e coluna únicas para RCL e não soma todos os valores monetários da declaração.
+TransfereGov pagina e filtra CNPJ e UF; não atribui emendas de Turvo/SC a Turvo/PR. A contagem é de planos de transferências especiais. O endpoint público de Gestão de Parcerias também filtra propostas pelo código IBGE; proposta, convênio firmado e pagamento são conceitos separados. INEP publica resultados IDEB municipais em planilhas oficiais, processadas por etapa/rede sem calcular média entre estratos. FNDE expõe registros por etapa/esfera sem soma potencialmente duplicada. SICONFI exige linha e coluna únicas para RCL e não soma todos os valores monetários da declaração.
+
+O módulo Escritório de Compras Públicas combina contratos PNCP com um indicador planejado de perfil de empresas (porte MEI/ME/EPP e CNAE). O retrato cadastral só aparece após processamento completo da base aberta CNPJ da Receita; nenhum perfil empresarial é estimado com dados parciais. A busca pública filtra texto, período de referência e situação da coleta.
 
 ## Limites operacionais
 

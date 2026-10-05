@@ -142,3 +142,29 @@ def test_fiscal_exact_rcl_published_without_summing_components():
         ],
     }
     assert normalize(item, response)["value"] == 100
+
+
+def test_pncp_contracts_publish_only_aggregated_supplier_dimensions():
+    item = next(i for i in CATALOG if i["id"] == "procurement_contracts")
+    response = {
+        "complete": True,
+        "period": "2025",
+        "url": "https://pncp.gov.br/api/consulta/v1/contratos",
+        "rows": [
+            {"numero_controle": "safe-id", "categoria": "Compras", "tipo_fornecedor": "Pessoa jurídica", "valor": 100, "objeto": "Papel"},
+            {"numero_controle": "safe-id-2", "categoria": "Serviços", "tipo_fornecedor": "Pessoa jurídica", "valor": 200, "objeto": "Manutenção"},
+        ],
+    }
+    normalized = normalize(item, response)
+    assert normalized["value"] == 2
+    assert normalized["groups"]["supplier_type"] == [{"name": "Pessoa jurídica", "count": 2}]
+    assert all("cnpj" not in str(row).lower() and "fornecedor_nome" not in row for row in normalized["rows"])
+
+
+def test_ideb_records_are_stratified_not_averaged():
+    item = next(i for i in CATALOG if i["id"] == "ideb")
+    response = {"complete": True, "period": "2023", "rows": [{"etapa": "anos_iniciais", "rede": "Pública", "ideb": 6.2}]}
+    normalized = normalize(item, response)
+    assert normalized["value"] is None
+    assert normalized["period"] == "2023"
+    assert normalized["rows"] == response["rows"]

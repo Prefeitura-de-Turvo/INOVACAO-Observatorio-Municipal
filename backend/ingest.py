@@ -74,9 +74,9 @@ async def refresh(only=None):
                     if item["tool"] not in tools:
                         raise ValueError("Extensão não disponível no servidor MCP configurado")
                     args = dict(item["args"])
-                    if item["id"] in {"rcl", "procurement", "transfers"}:
+                    if item["id"] in {"rcl", "procurement", "procurement_contracts", "transfers"}:
                         args["ano"] = year
-                    if item["id"] in {"procurement", "transfers"}:
+                    if item["id"] in {"procurement", "procurement_contracts", "transfers"}:
                         if len(cnpj) != 14:
                             raise ValueError("CNPJ municipal ainda não validado; configure MUNICIPAL_CNPJ")
                         args["cnpj"] = cnpj
