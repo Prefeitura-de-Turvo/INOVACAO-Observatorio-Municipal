@@ -14,6 +14,8 @@ No painel Cloudflare, abra **Workers & Pages → Create application → Pages �
 
 O domínio da API é o hostname público que você vai configurar no Tunnel. Use um hostname controlado pela Prefeitura. Configure a variável para Production e Preview. O valor é incorporado ao frontend durante o build, portanto, alterá-lo exige novo deploy. O projeto é estático; não configure backend Pages Functions.
 
+O arquivo `wrangler.jsonc` declara `pages_build_output_dir: ./dist` para que o Wrangler identifique o destino como **Cloudflare Pages** e não tente publicar o diretório usando uma configuração de Workers Static Assets. O nome configurado é `observatorio-municipal`; mantenha esse nome igual ao nome do projeto Pages no painel. No projeto Pages, não use `wrangler deploy` como comando de publicação de Worker. A configuração atual do projeto é `npm run build` com saída `dist`.
+
 ## 2. Publicar o backend pelo Tunnel
 
 No servidor que manterá o SQLite e executará o coletor, instale Docker Compose e clone o repositório. Copie `.env.example` para `.env` e configure:
