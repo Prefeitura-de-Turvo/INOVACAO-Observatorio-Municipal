@@ -71,6 +71,12 @@ def normalize(item, response):
         if not rows:
             raise ValueError("INEP não retornou estratos municipais do IDEB")
         value, period = None, response["period"]
+    elif id == "agreement_orders":
+        values = [number(row.get("valor")) for row in rows]
+        if any(value is None or value < 0 for value in values):
+            raise ValueError("TransfereGov retornou valor inválido de ordem bancária")
+        value, period = sum(values), response["period"]
+        points = [{"period": period, "value": value}]
     elif id == "pnae":
         if not rows:
             raise ValueError("FNDE não retornou registros municipais")

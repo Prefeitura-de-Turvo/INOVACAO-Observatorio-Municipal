@@ -1,5 +1,7 @@
 # Deploy e operação
 
+Para publicar o frontend estático no Cloudflare Pages e a API através de um Tunnel, siga [o guia Cloudflare Pages/Tunnel](cloudflare.md).
+
 ## Publicação em servidor
 
 1. Clone o repositório, copie `.env.example` para `.env` e confira parâmetros.
@@ -14,7 +16,7 @@ O CNPJ pode ser obtido automaticamente do cadastro de entes SICONFI por IBGE 412
 
 Agendador interno padrão: a cada 24 horas, com verificação de necessidade a cada minuto. Configurar `REFRESH_HOURS` sem criar tarefas por visitante. Backend deve usar um worker e permanecer ativo. A CLI permite coleta seletiva e é protegida por lock no mesmo banco.
 
-O template do workflow GitHub prevê coleta às 09:30 UTC (06:30 São Paulo), ou manualmente. Está em `docs/github-actions/`, aguardando ativação em `.github/workflows/` por credencial com escopo `workflow`; essa permissão não estava disponível na entrega. Produz um artefato de evidência e sinaliza `partial` como falha. Não distribui esse banco ao deploy. Não executar duas instâncias escrevendo no mesmo SQLite via sistema de arquivos remoto; adotar PostgreSQL e worker dedicado para réplicas.
+Os workflows de coleta e verificação já estão ativos em `.github/workflows/`. A coleta diária ocorre às 09:30 UTC (06:30 São Paulo), ou manualmente, e produz um artefato de evidência. Ela sinaliza `partial` como falha, mas não distribui esse banco ao servidor. Não executar duas instâncias escrevendo no mesmo SQLite via sistema de arquivos remoto; adotar PostgreSQL e worker dedicado para réplicas.
 
 ## Observabilidade e recuperação
 

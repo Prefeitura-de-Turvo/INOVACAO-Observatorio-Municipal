@@ -410,6 +410,122 @@ async def parcerias(ano: int = 2025) -> dict:
     }
 
 
+async def _transferegov_collection(client, endpoint: str, filters: dict) -> list[dict]:
+    base = "https://api-publica.transferegov.gestao.gov.br/parcerias"
+    rows, expected_items = [], None
+    for page in range(1, 101):
+        response = await client.get(
+            f"{base}/{endpoint}",
+            params={**filters, "pagina": page, "tamanho_da_pagina": 100},
+        )
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data.get("data"), list) or not isinstance(data.get("total_pages"), int):
+            raise ValueError(f"Schema TransfereGov não reconhecido em /{endpoint}")
+        if expected_items is None:
+            expected_items = data.get("total_items")
+        elif expected_items != data.get("total_items"):
+            raise ValueError(f"TransfereGov alterou o total em /{endpoint}")
+        rows.extend(data["data"])
+        if page >= data["total_pages"]:
+            if len(rows) != expected_items:
+                raise ValueError(f"Paginação TransfereGov incompleta em /{endpoint}")
+            return rows
+    raise ValueError(f"Paginação TransfereGov excedeu limite em /{endpoint}")
+
+
+async def _signed_partnerships(client, ano: int) -> tuple[list[dict], list[dict]]:
+    proposals = await _transferegov_collection(
+        client,
+        "proposta",
+        {"cd_ibge_recebedor": 4127965, "ano_proposta": ano},
+    )
+    selected, partnerships = [], []
+    for proposal in proposals:
+        if str(proposal.get("cd_ibge_recebedor")) != "4127965":
+            raise ValueError("TransfereGov retornou proposta de município diferente")
+        selected.append(proposal)
+        proposal_partnerships = await _transferegov_collection(
+            client, "parceria", {"id_proposta": proposal["id_proposta"]}
+        )
+        for partnership in proposal_partnerships:
+            if str(partnership.get("id_proposta")) != str(proposal["id_proposta"]):
+                raise ValueError("TransfereGov retornou parceria vinculada a outra proposta")
+            if partnership.get("dh_assinatura"):
+                partnerships.append({**partnership, "_proposal": proposal})
+    return selected, partnerships
+
+
+@mcp.tool(name="observatorio_parcerias_assinadas")
+async def parcerias_assinadas(ano: int = 2025) -> dict:
+    """Instrumentos de parceria com assinatura registrada, vinculados a propostas de Turvo."""
+    base = "https://api-publica.transferegov.gestao.gov.br/parcerias"
+    async with create_client(timeout=45) as client:
+        proposals, partnerships = await _signed_partnerships(client, ano)
+    rows = [
+        {
+            "id_parceria": partnership.get("id_parceria"),
+            "codigo_parceria": partnership.get("cd_parceria"),
+            "id_proposta": proposal.get("id_proposta"),
+            "data_assinatura": partnership.get("dh_assinatura"),
+            "situacao": partnership.get("in_situacao_parceria"),
+            "objeto": proposal.get("ds_objeto"),
+            "valor_proposto": proposal.get("nr_vlr_total"),
+        }
+        for partnership in partnerships
+        for proposal in [partnership["_proposal"]]
+    ]
+    return {
+        "rows": rows,
+        "url": f"{base}/parceria",
+        "complete": True,
+        "period": str(ano),
+        "params": {"cd_ibge_recebedor": 4127965, "ano_proposta": ano},
+        "note": f"Consultadas {len(proposals)} propostas e as parcerias vinculadas. Somente registros com data de assinatura foram classificados como formalizados; valor proposto não é valor repassado.",
+    }
+
+
+@mcp.tool(name="observatorio_ordens_bancarias_parcerias")
+async def ordens_bancarias_parcerias(ano: int = 2025) -> dict:
+    """Ordens bancárias emitidas para parcerias assinadas a partir de propostas de Turvo."""
+    base = "https://api-publica.transferegov.gestao.gov.br/parcerias"
+    async with create_client(timeout=45) as client:
+        _, partnerships = await _signed_partnerships(client, ano)
+        orders = {}
+        for partnership in partnerships:
+            agreement_id = partnership["id_parceria"]
+            documents = await _transferegov_collection(
+                client, "documento-habil", {"id_parceria": agreement_id}
+            )
+            for document in documents:
+                document_id = document.get("id_documento_habil")
+                payment_orders = await _transferegov_collection(
+                    client, "ordem-pagamento", {"id_documento_habil": document_id}
+                )
+                for order in payment_orders:
+                    if not order.get("dt_emissao_ordem_bancaria"):
+                        continue
+                    order_id = str(order.get("id_op") or "")
+                    if not order_id:
+                        raise ValueError("TransfereGov retornou ordem bancária sem identificador")
+                    public_row = {
+                        "id_parceria": agreement_id,
+                        "data_ordem_bancaria": order["dt_emissao_ordem_bancaria"],
+                        "valor": order.get("vl_ordem_pagamento"),
+                    }
+                    if order_id in orders and orders[order_id] != public_row:
+                        raise ValueError("TransfereGov retornou ordem bancária duplicada divergente")
+                    orders[order_id] = public_row
+    return {
+        "rows": list(orders.values()),
+        "url": f"{base}/ordem-pagamento",
+        "complete": True,
+        "period": str(ano),
+        "params": {"cd_ibge_recebedor": 4127965, "ano_proposta": ano},
+        "note": "Inclui apenas ordem com data de emissão da ordem bancária. A API distingue ordem emitida de liquidação bancária e pagamento final.",
+    }
+
+
 @mcp.tool(name="observatorio_comparacao")
 async def comparacao() -> dict:
     """Seleciona 5 municípios do PR mais próximos em população no mesmo ano."""

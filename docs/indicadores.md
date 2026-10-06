@@ -17,10 +17,12 @@ Valores são obtidos em execução; nenhum valor é fixado neste catálogo. Per�
 | Vínculos formais • RAIS | Emprego | rais | vínculos | Estoque em 31/12, município do estabelecimento. Apenas agregados oficiais, sem microdados pessoais. Sem ferramenta RAIS na versão inspecionada. Aceita importação suplementar documentada de agregados oficiais. |
 | Contratações publicadas no PNCP | Compras Públicas/PNCP | pncp | processos | Identificadores PNCP únicos por CNPJ municipal, ano de publicação e todas as modalidades/páginas.  |
 | Contratos publicados no PNCP | Escritório de Compras Públicas | PNCP | contratos | Todos os contratos do CNPJ municipal e período anual; painel expõe dados agregados de valor/categoria/tipo de pessoa, não CNPJ/CPF nem nome do fornecedor. |
-| Empresas ativas por porte e atividade econômica | Escritório de Compras Públicas | Receita Federal / CNPJ | empresas | Indicador pendente: depende de agregação municipal validada da base nacional CNPJ, CNAE, porte e SIMEI. Não será calculado com amostra ou cadastro individual. |
+| Empresas ativas e estabelecimentos por porte/CNAE | Escritório de Compras Públicas | Receita Federal / CNPJ | empresas | Agregação mensal completa. O total conta CNPJ básicos distintos com estabelecimentos ativos locais; a tabela detalha empresas distintas por porte/CNAE e quantidade de estabelecimentos. Uma empresa com filiais em CNAEs diferentes aparece em mais de uma combinação. |
 | IDAN-M • Sebrae/PR | Escritório de Compras Públicas | Sebrae/PR | pontos (0–100) | Série anual da pontuação oficial do Índice de Desenvolvimento do Ambiente de Negócios Municipal. Sem valor até obter extrato/divulgação oficial por município e ano; não estimar a nota pelos eixos ou pela média divulgada para participantes. |
 | Planos de transferências especiais | Transferências/convênios | transferegov | planos | Planos de ação únicos para o CNPJ da Prefeitura. Sem inferir valor pago.  |
 | Propostas federais de parceria | Transferências/convênios | TransfereGov Gestão de Parcerias | propostas | API aberta filtrada pelo código IBGE. Propostas não equivalem a instrumentos celebrados, valores transferidos ou pagamentos. |
+| Parcerias com instrumento assinado | Transferências/convênios | TransfereGov Gestão de Parcerias | parcerias | Junta proposta do município à parceria pelo ID e exige data oficial de assinatura. |
+| Valor em ordens bancárias emitidas • parcerias | Transferências/convênios | TransfereGov Gestão de Parcerias | R$ | Ordens bancárias com data de emissão, vinculadas por documento hábil e parceria assinada. Não afirma liquidação bancária nem pagamento final. |
 
 ## Escritório de Compras Públicas
 

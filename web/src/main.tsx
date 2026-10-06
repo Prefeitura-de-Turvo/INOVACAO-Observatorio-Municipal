@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 import "./style.css";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+const apiUrl = (path: string) => API_BASE + (path.startsWith("/") ? path : "/" + path);
+
 type Point = { period: string; value: number };
 type Indicator = {
   id: string;
@@ -89,7 +92,7 @@ const statuses: Record<string, string> = {
   available: "Disponível",
   stale: "Cache • atualização pendente",
   unavailable: "Fonte indisponível",
-  pending: "Integração pendente",
+  pending: "Aguardando dados oficiais",
 };
 const moduleLabels: Record<string, string> = {
   "Compras Públicas/PNCP": "Compras públicas",
@@ -409,7 +412,7 @@ function Detail({ item, close }: { item: Indicator; close: () => void }) {
         <Chart item={item} />
         <DataTable key={item.id} item={item} />
         {item.updatedAt && item.points.length > 0 && (
-          <a className="download" href={"/api/export/" + item.id}>
+          <a className="download" href={apiUrl("/api/export/" + item.id)}>
             <Download size={16} /> Exportar série com metadados
           </a>
         )}
@@ -433,8 +436,8 @@ function App() {
     const controller = new AbortController();
     setLoading(true);
     Promise.all([
-      fetchJSON<Dataset>("/api/indicators", controller.signal),
-      fetchJSON<Comparison>("/api/comparison", controller.signal),
+      fetchJSON<Dataset>(apiUrl("/api/indicators"), controller.signal),
+      fetchJSON<Comparison>(apiUrl("/api/comparison"), controller.signal),
     ])
       .then(([d, c]) => {
         setData(d);
@@ -657,7 +660,7 @@ function App() {
                     ))}
                   </div>
                   <a
-                    href="/api/sources"
+                    href={apiUrl("/api/sources")}
                     target="_blank"
                     rel="noreferrer"
                     className="download"
@@ -765,7 +768,7 @@ function App() {
                         <option value="available">Disponíveis</option>
                         <option value="stale">Atualização pendente</option>
                         <option value="unavailable">Indisponíveis</option>
-                        <option value="pending">Integração pendente</option>
+                        <option value="pending">Aguardando dados oficiais</option>
                       </select>
                     </label>
                     <label className="filter-select">

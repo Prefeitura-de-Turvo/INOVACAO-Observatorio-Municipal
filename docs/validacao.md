@@ -1,6 +1,6 @@
 # Validação da entrega
 
-Validação com APIs reais em 05/10/2026. Estes resultados documentam uma coleta; não são valores fixados no frontend nem garantia de disponibilidade futura.
+Validação com APIs reais em 06/10/2026. Estes resultados documentam coletas; não são valores fixados no frontend nem garantia de disponibilidade futura.
 
 | Indicador | Referência observada | Situação |
 |---|---|---|
@@ -14,13 +14,15 @@ Validação com APIs reais em 05/10/2026. Estes resultados documentam uma coleta
 | Estabelecimentos de saúde ativos | Cadastro corrente; competência não informada pela API | Coleta real validada |
 | Alunos atendidos pelo PNAE | 2022 | Coleta real validada |
 | IDEB municipal | 2023 (último ano habilitado na versão MCP Brasil fixada) | Adaptador implementado; download INEP indisponível nesta execução de validação |
-| Vínculos formais • RAIS | Não disponível | Integração complementar pendente |
+| Vínculos formais • RAIS | Não disponível | Importador atualizado para layouts antigo e 2024+; série aguarda importação do microdado oficial |
 | Contratações publicadas no PNCP | 20250101 a 20251231 | Coleta real validada |
 | Contratos PNCP | 2025 | Coleta real validada; 158 contratos, sem identificação fiscal/nominal de fornecedor no cache |
 | Planos de transferências especiais | 2025 | Coleta real validada |
 | Propostas federais de parceria | 2025 | Coleta real validada; 12 propostas no endpoint público do TransfereGov |
-| Empresas ativas por porte e atividade econômica | Não disponível | Pendente de processamento da base aberta CNPJ da Receita Federal |
+| Empresas ativas e estabelecimentos por porte/CNAE | Não disponível | Importador completo implementado; aguarda processamento de uma edição mensal oficial completa da base CNPJ |
 | IDAN-M • Sebrae/PR | Não disponível | Integração de catálogo e importador implementados; série de Turvo pendente de divulgação/extrato oficial municipal |
+| Parcerias com instrumento assinado | 2025 | API consultada e vínculos por proposta validados; 0 registros com data de assinatura nesta consulta |
+| Valor em ordens bancárias emitidas • parcerias | 2025 | API consultada; nenhum instrumento assinado nem ordem bancária associada foi encontrado nesta consulta |
 
 Comparação validada com 6 municípios (Turvo e 5 pares populacionais do PR) e referência 2026. PNCP retornou 236 identificadores únicos do CNPJ municipal em 2025. FNDE/PNAE retornou registros por esfera e etapa, sem somá-los. RREO Simplificado validou RCL na coluna dos últimos 12 meses.
 
@@ -28,4 +30,4 @@ Verificações concluídas: build TypeScript/Vite; testes de integridade/API/RAI
 
 Falhas iniciais PNCP HTTP 204/429, filtros FNDE e demonstrativo SICONFI foram corrigidas após inspeção de respostas oficiais. O cache real, as evidências e os logs locais não são incluídos no Git. A instalação nova coleta seus próprios dados.
 
-A aplicação foi executada localmente. Publicação em domínio público não foi realizada; os arquivos de deploy e instruções estão incluídos. RAIS requer arquivo real. O porte/CNAE das empresas requer agregação da base RFB. O endpoint de TransfereGov validado aqui retorna propostas; o cruzamento com parcerias formalizadas e execução financeira segue como evolução.
+A aplicação foi executada localmente. Publicação em domínio público não foi realizada; o Pages/Tunnel está configurado em código e documentação, mas ainda requer conta Cloudflare, domínio, token de Tunnel e servidor persistente. RAIS e CNPJ requerem arquivos oficiais locais. O IDAN-M requer extrato oficial Sebrae/PR. A API TransfereGov também consulta parcerias assinadas e ordens bancárias; a coleta de 2025 não encontrou assinatura nem ordem associada às propostas de Turvo.

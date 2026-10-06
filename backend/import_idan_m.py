@@ -8,6 +8,7 @@ O arquivo de origem deve conter a série oficial de Turvo; não estima notas nem
 import argparse
 import csv
 import hashlib
+import json
 import math
 from pathlib import Path
 from urllib.parse import urlparse
@@ -60,6 +61,12 @@ def main():
         raise ValueError("Hash divergente: publicação bloqueada")
     with args.file.open(encoding="utf-8-sig", newline="") as stream:
         points, scanned = parse(stream)
+    previous = store.read_all().get("idan_m", {})
+    if previous.get("payload"):
+        old_payload = json.loads(previous["payload"])
+        merged = {point["period"]: point["value"] for point in old_payload.get("points", [])}
+        merged.update({point["period"]: point["value"] for point in points})
+        points = [{"period": year, "value": merged[year]} for year in sorted(merged)]
     rows = [{"Ano": point["period"], "Pontuação IDAN-M": point["value"]} for point in points]
     store.save(
         "idan_m",

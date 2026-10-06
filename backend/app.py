@@ -9,6 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
@@ -42,6 +43,23 @@ async def lifespan(app):
 
 
 app = FastAPI(title="Observatório Municipal de Turvo/PR", version="1.0.0", lifespan=lifespan)
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if origin.strip()
+]
+cors_origin_regex = os.getenv("CORS_ORIGIN_REGEX", "").strip() or None
+if cors_origins or cors_origin_regex:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_origin_regex=cors_origin_regex,
+        allow_methods=["GET", "HEAD"],
+        allow_headers=["Accept", "Content-Type"],
+        allow_credentials=False,
+    )
 
 
 @app.middleware("http")

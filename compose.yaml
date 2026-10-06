@@ -9,5 +9,14 @@ services:
     volumes:
       - observatorio-data:/app/data
     restart: unless-stopped
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARED_TUNNEL_TOKEN:-}
+    depends_on:
+      - observatorio
+    restart: unless-stopped
 volumes:
   observatorio-data:

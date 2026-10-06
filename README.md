@@ -8,7 +8,7 @@ Aplicação executável, frontend responsivo, backend, ingestão real via MCP Br
 
 Os módulos incluem Visão Geral, Demografia, Economia, Finanças Públicas, Saúde, Educação, Emprego, Saneamento/Infraestrutura, Compras Públicas/PNCP, Escritório de Compras Públicas, Transferências/convênios, Comparação e Fontes. A existência de um módulo não significa que todas as fontes estejam disponíveis.
 
-As coletas reais validaram IBGE, CNES, PNCP, FNDE/PNAE, SICONFI e transferências especiais. O adaptador de contratos consulta o PNCP por órgão e agrega contratos sem expor identificação fiscal de fornecedores. O IDEB municipal consulta os downloads oficiais do INEP por rede e etapa. A API pública nova do TransfereGov é integrada para propostas federais do município; a interface deixa claro que proposta não significa convênio assinado nem pagamento. O escritório traz busca, filtro por estado da coleta e referência, com perfil de empresas por porte/atividade marcado como pendente até processar a base nacional aberta CNPJ da Receita Federal. Inclui o IDAN-M anual do Sebrae/PR, sem pontuação até obter divulgação ou extrato oficial de Turvo. Falhas preservam cache validado; dados indisponíveis não viram zero. Consulte [validação](docs/validacao.md).
+As coletas reais validaram IBGE, CNES, PNCP, FNDE/PNAE, SICONFI e transferências especiais. O adaptador de contratos consulta o PNCP por órgão e agrega contratos sem expor identificação fiscal de fornecedores. A API pública TransfereGov agora separa propostas, instrumentos com assinatura registrada e ordens bancárias emitidas. O escritório traz busca, filtros e importador para agregar a edição completa do CNPJ da Receita Federal por porte e CNAE, sem cadastro individual. Inclui o IDAN-M anual do Sebrae/PR, sem pontuação até obter divulgação ou extrato oficial de Turvo. Falhas preservam cache validado; dados indisponíveis não viram zero. Consulte [validação](docs/validacao.md).
 
 ## Iniciar em desenvolvimento
 
@@ -61,7 +61,7 @@ Cada indicador contém fonte, endpoint/parâmetros quando disponíveis, método,
 - `available`: resposta validada dentro do intervalo de atualização;
 - `stale`: último dado real preservado, coleta recente falhou ou TTL expirou;
 - `unavailable`: ainda não há resposta publicável;
-- `pending`: integração complementar não homologada.
+- `pending`: importação oficial ainda aguarda arquivo ou série validada.
 
 `null`, dados suprimidos, HTTP 4xx/5xx e ausência de registros estatísticos não viram zero. Cadastros só publicam zero após uma resposta vazia válida e paginação completa. Valores financeiros estimados, planos de ação e contratos não são gastos pagos. PIB por habitante é um **cálculo** com PIB/população no mesmo ano, distinto da série oficial de PIB per capita.
 
@@ -88,7 +88,7 @@ docker compose up --build -d
 
 A porta do Compose é vinculada a `127.0.0.1:8000`. Configure proxy reverso e HTTPS para publicar no domínio escolhido, por exemplo `observatorio.turvo.pr.gov.br` **somente após provisionar esse domínio**. Nenhum domínio foi presumido ou publicado automaticamente. O volume `observatorio-data` deve ser persistente e ter backup. Um worker é suficiente; para múltiplas réplicas, migrar cache/locks para PostgreSQL e separar o job de coleta. Veja [deploy e operação](docs/deploy.md).
 
-Os templates em `docs/github-actions/` permitem executar testes em push/PR e coleta diária às **06:30 em America/Sao_Paulo**, além da execução manual, quando ativados. **Ativação pendente:** a credencial GitHub disponível não possui escopo `workflow`; por isso os YAMLs foram publicados como templates, sem automações GitHub ativas. Para ativar, mover/copiar os templates para `.github/workflows/` usando credencial com permissão para workflows. O banco resultante é um artefato de 30 dias; **o workflow não atualiza automaticamente o servidor publicado**. A coleta em produção é feita pelo agendador interno. O workflow sinaliza falha quando a coleta é parcial, preservando o banco como artefato para auditoria.
+Os workflows ativos em `.github/workflows/` executam testes em push/PR e coleta diária às **06:30 em America/Sao_Paulo**, além de execução manual. A coleta do GitHub Actions gera um artefato de 30 dias e verifica fontes, mas não atualiza automaticamente o servidor; em produção, o agendador interno mantém o cache atualizado. Uma coleta parcial marca o workflow como falha e conserva o banco como artefato para auditoria.
 
 ## RAIS: importação suplementar
 
@@ -101,7 +101,7 @@ uv run python -m backend.import_rais /caminho/arquivo-oficial.txt \
   --sha256 SHA256_CONFERIDO
 ```
 
-O layout homologado exige `Município` e `Vínculo Ativo 31/12` (`0`/`1`), delimitador `;` e encoding latin-1 por padrão. O importador conta apenas vínculos ativos do município do estabelecimento (412796/4127965), valida o hash e preserva proveniência, publicando **somente o agregado**. Não envia nem armazena microdados pessoais no cache. Hash atesta integridade; o operador deve conferir autenticidade e o ano da fonte. Sem arquivo real validado, o módulo permanece pendente. Novos layouts exigem atualização explícita do parser.
+O importador aceita o layout legado (`;`, nomes antigos) e o layout público RAIS 2024+ (separador `,`, nomes novos). A codificação é detectada automaticamente ou pode ser definida com `--encoding`. O parser exige campos homologados de município e vínculo ativo em 31/12, filtra Turvo (412796/4127965), valida o hash e preserva proveniência, publicando **somente o agregado**. Não envia nem armazena microdados pessoais no cache. Hash atesta integridade; o operador deve conferir autenticidade e o ano da fonte. A página oficial descreve a mudança de formato de microdados [RAIS 2024](https://www.gov.br/trabalho-e-emprego/pt-br/acesso-a-informacao/acoes-e-programas/programas-projetos-acoes-obras-e-atividades/estatisticas-trabalho/comunicados/comunicado-microdados-rais-2024).
 
 ## IDAN-M anual do Sebrae/PR
 
@@ -112,6 +112,23 @@ O resultado individual de Turvo não foi encontrado em uma API ou tabela públic
       --sha256 SHA256_CONFERIDO
 
 O importador exige URL HTTPS Sebrae/PR, verifica o hash, rejeita duplicidades e valida ano e pontuação entre 0 e 100. Apenas a série agregada de Turvo, proveniência e hash entram no banco local. A conferência de autenticidade do documento e da metodologia cabe ao operador. Veja [catálogo e critérios](docs/indicadores.md).
+
+## Perfil de estabelecimentos no CNPJ
+
+O importador processa os arquivos já extraídos de Empresas, Estabelecimentos e Simples de uma mesma edição mensal completa do CNPJ. Obtenha-os na [página de dados abertos da Receita Federal](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/dados-abertos/cadastros), extraia as partições e separe-as em diretórios. Não carregue arquivos de meses diferentes:
+
+    uv run python -m backend.import_cnpj \
+      --companies-dir /dados/cnpj/Empresas \
+      --establishments-dir /dados/cnpj/Estabelecimentos \
+      --simples-dir /dados/cnpj/Simples \
+      --month AAAA-MM \
+      --complete-release
+
+O operador atesta que baixou todas as partições mensais. O processo cruza município RFB 412796 e UF PR, situação cadastral ativa, porte e opção MEI. O total é de empresas distintas pelo CNPJ básico; as linhas detalham empresas e estabelecimentos por porte/CNAE principal. Uma empresa pode aparecer em mais de uma combinação de atividade se tiver filiais com CNAEs diferentes. O processo guarda hash dos arquivos e somente os totais agregados. Nenhum nome, CNPJ, endereço, email ou telefone é publicado. O pacote nacional exige espaço e tempo de processamento proporcionais ao volume integral dos arquivos.
+
+## Cloudflare Pages e Tunnel
+
+O frontend pode ser publicado no Cloudflare Pages e consumir a API FastAPI pelo Cloudflare Tunnel. Configure o build com `npm run build`, saída `dist` e `VITE_API_BASE_URL` apontando ao hostname público da API; no servidor, use `CORS_ORIGINS` e `CLOUDFLARED_TUNNEL_TOKEN`. Siga [o guia Cloudflare](docs/cloudflare.md) para configuração completa. Pages hospeda apenas o frontend estático; o backend e seu cache persistente permanecem em um servidor conectado pelo Tunnel.
 
 ## Verificação
 
@@ -126,12 +143,9 @@ uv run python -m backend.ingest procurement comparison
 
 Testes cobrem território errado, classificação ambígua, ausência de dados, valores suprimidos, conversão de unidade, paginação incompleta, preservação de cache após falha, CSV/API e filtragem RAIS. Para auditoria de coleta, consultar `runs.detail` e `evidence` no banco local, mantendo logs privados.
 
-## Evolução prevista
+## Limites de integração que dependem de fonte/credencial
 
-1. Processar mensalmente a base nacional aberta CNPJ da Receita Federal em job isolado, agregando Turvo por porte, CNAE e situação sem armazenar/servir identificadores.
-2. Expandir Gestão de Parcerias do TransfereGov de propostas para parcerias celebradas e execução financeira, separados das transferências especiais.
-3. Homologar cobertura RAIS/Caged automatizada e séries adicionais de saúde, finanças e saneamento.
-4. Ampliar comparações com PIB, estrutura etária e outros critérios no mesmo período.
+O cadastro CNPJ deve ser baixado e processado por operador com infraestrutura para o conjunto nacional completo. RAIS publica microdados anuais fora de uma API MCP; o indicador só aparece depois de uma carga oficial. O acesso dinâmico MTE requer credencial, portanto não é automatizado. O IDAN-M individual de Turvo requer divulgação ou extrato oficial do Sebrae/PR. TransfereGov é consultado pela API aberta com filtro de município; propostas, instrumentos assinados e pagamentos são estados diferentes e não são inferidos entre si.
 
 Código sob licença MIT. Os dados mantêm os termos das respectivas fontes; confira [SOURCES.md do MCP Brasil](https://github.com/Mcp-Brasil/mcp-brasil/blob/2efb258370b125bbf190884283ae10f209b9d335/SOURCES.md).
 
