@@ -88,7 +88,7 @@ docker compose up --build -d
 
 A porta do Compose é vinculada a `127.0.0.1:8000`. Configure proxy reverso e HTTPS para publicar no domínio escolhido, por exemplo `observatorio.turvo.pr.gov.br` **somente após provisionar esse domínio**. Nenhum domínio foi presumido ou publicado automaticamente. O volume `observatorio-data` deve ser persistente e ter backup. Um worker é suficiente; para múltiplas réplicas, migrar cache/locks para PostgreSQL e separar o job de coleta. Veja [deploy e operação](docs/deploy.md).
 
-Os workflows ativos em `.github/workflows/` executam testes em push/PR e coleta diária às **06:30 em America/Sao_Paulo**, além de execução manual. A coleta do GitHub Actions gera um artefato de 30 dias e verifica fontes, mas não atualiza automaticamente o servidor; em produção, o agendador interno mantém o cache atualizado. Uma coleta parcial marca o workflow como falha e conserva o banco como artefato para auditoria.
+Os exemplos de workflow em `docs/github-actions/` não são executados automaticamente pelo GitHub Actions. Se forem ativados, o CI executa build/testes e a coleta agendada produz um artefato de 30 dias; ela não atualiza o servidor publicado. Em produção, o agendador interno mantém o cache atualizado. Uma coleta parcial deve ser investigada antes de publicar os dados.
 
 ## RAIS: importação suplementar
 

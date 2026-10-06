@@ -16,6 +16,20 @@ O domínio da API é o hostname público que você vai configurar no Tunnel. Use
 
 O arquivo `wrangler.jsonc` declara `pages_build_output_dir: ./dist` para que o Wrangler identifique o destino como **Cloudflare Pages** e não tente publicar o diretório usando uma configuração de Workers Static Assets. O nome configurado é `observatorio-municipal`; mantenha esse nome igual ao nome do projeto Pages no painel. No projeto Pages, não use `wrangler deploy` como comando de publicação de Worker. A configuração atual do projeto é `npm run build` com saída `dist`.
 
+### Se o build estiver usando Workers Builds
+
+Os logs com Node.js `24.18.0`, Python `3.13.3` e implantação por Wrangler correspondem à imagem de **Workers Builds**. Nessa modalidade, o padrão de deploy é `npx wrangler deploy`, que publica um Worker e falha para este projeto Pages; reproduzi localmente esse erro de configuração. Node, uv e a compilação não são a causa: `npm clean-install`, `npm run build` e `uv sync --locked` passam. O warning de scripts do `esbuild` é separado do erro de deploy.
+
+Para manter Workers Builds e publicar neste Pages, configure no projeto:
+
+- `SKIP_DEPENDENCY_INSTALL=1` (evita instalar também as dependências Python no build estático);
+- Build command: `npm ci && npm run build`;
+- Deploy command: `npm run deploy:pages`;
+- `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN` como segredos de build; o token precisa da permissão Pages Edit;
+- `VITE_API_BASE_URL` com a URL pública da API.
+
+O script `deploy:pages` chama `wrangler pages deploy dist --project-name observatorio-municipal`. Como alternativa mais simples, conecte o repositório por **Pages → Git integration** e deixe o Pages publicar o diretório `dist` após `npm run build`; não crie um Worker Builds para esse frontend.
+
 ## 2. Publicar o backend pelo Tunnel
 
 No servidor que manterá o SQLite e executará o coletor, instale Docker Compose e clone o repositório. Copie `.env.example` para `.env` e configure:

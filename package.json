@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
+    "deploy:pages": "npx --yes wrangler@4.147.0 pages deploy dist --project-name observatorio-municipal",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
